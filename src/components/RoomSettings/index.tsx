@@ -1,8 +1,8 @@
-import styled from '@emotion/styled';
-import React, { useState, useEffect, useRef, SetStateAction } from 'react';
+import React, { useState, SetStateAction } from 'react';
 import { Button, Grid, Box, TextField, Typography } from '@mui/material';
 import { Mic, MicOff, Videocam, VideocamOff, Settings } from '@mui/icons-material';
 import { DeviceSettingsModal } from '../modals/DeviceSettings';
+import { VideoPlayer } from '../VideoPlayer';
 
 const JOIN_ROOM_HEADING = 'Join Room';
 const AUDIO_OPTION = 'audio';
@@ -11,13 +11,6 @@ const INPUT_PLACEHOLDER = 'Type your name';
 const JOIN_BTN_TEXT = 'Join the room';
 
 const ICON_STYLES = { cursor: 'pointer', '&:hover': { opacity: 0.7 }, color: 'grey.200' };
-
-const VideoPlayer = styled.video`
-  height: 100%;
-  width: 100%;
-  object-fit: cover;
-  transform: scale(-1, 1);
-`;
 
 interface Props {
   roomName: string;
@@ -43,15 +36,8 @@ export const RoomSettings: React.FC<Props> = ({
   onUserNameInput,
 }) => {
   const [isSettingsModalVisible, setSettingsModalVisible] = useState(false);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const isJoinBtnDisabled = userName.trim() === '';
-
-  useEffect(() => {
-    if (localMediaStream && videoRef?.current) {
-      videoRef.current.srcObject = localMediaStream;
-    }
-  }, [localMediaStream, videoRef]);
 
   const onSettingsIconClick = () => {
     setSettingsModalVisible(true);
@@ -112,7 +98,7 @@ export const RoomSettings: React.FC<Props> = ({
         </Grid>
       </Grid>
       <Box sx={{ width: ['100vw', '70vw'], height: ['50%', '100%'], bgcolor: 'grey.900' }}>
-        {mediaOptions.video && localMediaStream ? <VideoPlayer autoPlay muted ref={videoRef} /> : null}
+        {mediaOptions.video && localMediaStream ? <VideoPlayer isMuted isMirrored stream={localMediaStream} /> : null}
       </Box>
       <DeviceSettingsModal
         isOpen={isSettingsModalVisible}
