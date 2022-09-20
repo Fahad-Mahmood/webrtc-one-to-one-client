@@ -2,12 +2,12 @@ import type { NextPage } from 'next';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useState, useEffect } from 'react';
-import { Box } from '@mui/material';
 import { RoomSettings } from '../../src/components/RoomSettings';
+import { ChatRoom } from '../../src/components/ChatRoom';
 
 const PAGE_TITLE = 'WebRTC Ventures Join Room 1:1';
 
-const ChatRoom: NextPage = () => {
+const ChatHome: NextPage = () => {
   const router = useRouter();
   const roomName = router.query.room as string;
   const [userName, setUserName] = useState<string>('');
@@ -69,11 +69,11 @@ const ChatRoom: NextPage = () => {
             onJoin={onJoin}
           />
         ) : (
-          <Box>Room Joined</Box>
+          <ChatRoom localMediaStream={localMediaStream} />
         )}
       </main>
     </div>
   );
 };
 
-export default ChatRoom;
+export default ChatHome;
