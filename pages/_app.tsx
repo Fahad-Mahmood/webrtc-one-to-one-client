@@ -8,6 +8,7 @@ import { CacheProvider, EmotionCache } from '@emotion/react';
 import createEmotionCache from '../src/config/createEmotionCache';
 import theme from '../src/config/theme';
 import { GLOBAL_STYLES } from '../styles/global';
+import 'webrtc-adapter';
 
 const clientSideEmotionCache = createEmotionCache();
 
