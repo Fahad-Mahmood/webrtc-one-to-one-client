@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import React, { useState, useEffect } from 'react';
 import { RoomSettings } from '../../src/components/RoomSettings';
 import { ChatRoom } from '../../src/components/ChatRoom';
+import { CallProvider } from '../../src/providers/CallProvider';
 
 const PAGE_TITLE = 'WebRTC Ventures Join Room 1:1';
 
@@ -56,21 +57,28 @@ const ChatHome: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main>
-        {!isRoomJoined ? (
-          <RoomSettings
-            roomName={roomName}
-            userName={userName}
-            localMediaStream={localMediaStream}
-            selectedDevices={selectedDevices}
-            mediaOptions={mediaOptions}
-            onMediaOptionClick={onMediaOptionClick}
-            setSelectedDevices={setSelectedDevices}
-            onUserNameInput={onUserNameInput}
-            onJoin={onJoin}
-          />
-        ) : (
-          <ChatRoom localMediaStream={localMediaStream} />
-        )}
+        <CallProvider
+          localMediaStream={localMediaStream}
+          userName={userName}
+          roomName={roomName}
+          isReady={isRoomJoined}
+        >
+          {!isRoomJoined ? (
+            <RoomSettings
+              roomName={roomName}
+              userName={userName}
+              localMediaStream={localMediaStream}
+              selectedDevices={selectedDevices}
+              mediaOptions={mediaOptions}
+              onMediaOptionClick={onMediaOptionClick}
+              setSelectedDevices={setSelectedDevices}
+              onUserNameInput={onUserNameInput}
+              onJoin={onJoin}
+            />
+          ) : (
+            <ChatRoom localMediaStream={localMediaStream} />
+          )}
+        </CallProvider>
       </main>
     </div>
   );

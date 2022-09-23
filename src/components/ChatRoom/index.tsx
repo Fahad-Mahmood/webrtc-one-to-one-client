@@ -1,5 +1,6 @@
 import { Grid, Box, Typography } from '@mui/material';
 import { VideoPlayer } from '../VideoPlayer';
+import { useCallProviderContext } from '../../providers/CallProvider';
 
 interface Props {
   localMediaStream: MediaStream | null;
@@ -8,6 +9,7 @@ interface Props {
 const WAITING_TEXT = 'Waiting For Participant';
 
 export const ChatRoom: React.FC<Props> = ({ localMediaStream }) => {
+  const { remoteMediaStream } = useCallProviderContext();
   return (
     <Grid container sx={{ position: 'relative', width: '100%', height: '100vh' }}>
       <Grid
@@ -16,9 +18,13 @@ export const ChatRoom: React.FC<Props> = ({ localMediaStream }) => {
         alignItems="center"
         sx={{ height: '100%', width: '100%', bgcolor: 'grey.900' }}
       >
-        <Typography variant="h6" color="white">
-          {WAITING_TEXT}
-        </Typography>
+        {remoteMediaStream ? (
+          <VideoPlayer stream={remoteMediaStream} />
+        ) : (
+          <Typography variant="h6" color="white">
+            {WAITING_TEXT}
+          </Typography>
+        )}
       </Grid>
       <Box
         sx={{
