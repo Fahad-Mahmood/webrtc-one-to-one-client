@@ -9,3 +9,8 @@ interface SelectedDevices {
   audioDeviceId?: string;
   videoDeviceId?: string;
 }
+interface ShimPeerConnection extends RTCPeerConnection {
+  onaddstream: unknown;
+  onremovestream: unknown;
+  addStream: unknown;
+}
