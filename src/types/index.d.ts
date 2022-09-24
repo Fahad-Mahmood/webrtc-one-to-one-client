@@ -14,3 +14,9 @@ interface ShimPeerConnection extends RTCPeerConnection {
   onremovestream: unknown;
   addStream: unknown;
 }
+
+interface AudioFilter {
+  id: number;
+  label: string;
+  transform?: (sourceMedia: MediaStream) => MediaStream;
+}
