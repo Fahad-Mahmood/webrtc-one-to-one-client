@@ -6,6 +6,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import { Theme, Select, MenuItem, InputLabel, FormControl, SelectChangeEvent } from '@mui/material';
+import { AUDIO_FILTERS } from '../../utils/audioFilters';
 
 const MODAL_TITLE = 'Device Settings';
 const AUDIO_DEVICE_KIND = 'audioinput';
@@ -16,6 +17,8 @@ const AUDIO_SELECT_LABEL = 'Audio Select';
 const VIDEO_SELECT_LABEL = 'Video Select';
 const CANCEL_BTN_TEXT = 'Cancel';
 const SAVE_BTN_TEXT = 'Save';
+const VOICE_FILTER_HEADING = 'Voice Filters';
+const VOICE_FILTER_SELECT_LABEL = 'Filter Select';
 
 const getModalStyles = (theme: Theme) => ({
   position: 'absolute' as 'absolute',
@@ -34,15 +37,17 @@ const getModalStyles = (theme: Theme) => ({
 
 interface Props {
   isOpen: boolean;
-  onClose: (selectedDevices?: SelectedDevices) => void;
+  onClose: (selectedAudioFilter?: AudioFilter | null, selectedDevices?: SelectedDevices) => void;
   selectedDevices?: SelectedDevices | null;
+  selectedAudioFilter?: AudioFilter | null;
 }
 
-export const DeviceSettingsModal: React.FC<Props> = ({ isOpen, onClose, selectedDevices }) => {
+export const DeviceSettingsModal: React.FC<Props> = ({ isOpen, onClose, selectedDevices, selectedAudioFilter }) => {
   const theme = useTheme();
   const [availableDevices, setAvailableDevices] = useState<MediaDeviceInfo[] | null>(null);
   const [selectedAudioDevice, setSelectedAudioDevice] = useState<MediaDeviceInfo | null>(null);
   const [selectedVideoDevice, setSelectedVideoDevice] = useState<MediaDeviceInfo | null>(null);
+  const [currentSelectedAudioFilter, setSelectedAudioFilter] = useState<AudioFilter | null>(null);
 
   const audioDevices = useMemo(
     () => availableDevices?.filter((mediaDevice) => mediaDevice.kind === AUDIO_DEVICE_KIND) ?? [],
@@ -68,6 +73,12 @@ export const DeviceSettingsModal: React.FC<Props> = ({ isOpen, onClose, selected
     [selectedDevices, videoDevices],
   );
 
+  const defaultAudioFilerIndex = useMemo(
+    () =>
+      selectedAudioFilter ? AUDIO_FILTERS.findIndex((audioFilter) => audioFilter.id === selectedAudioFilter.id) : 0,
+    [selectedAudioFilter],
+  );
+
   useEffect(() => {
     const listDevices = async () => {
       let devices = await navigator.mediaDevices.enumerateDevices();
@@ -86,19 +97,24 @@ export const DeviceSettingsModal: React.FC<Props> = ({ isOpen, onClose, selected
     setSelectedVideoDevice(videoDevices[value]);
   };
 
+  const onAudioFilterSelect = (e: SelectChangeEvent<number>) => {
+    const value = e.target.value as number;
+    setSelectedAudioFilter(AUDIO_FILTERS[value]);
+  };
+
   const onSave = () => {
     const selectedDevices = {
       audioDeviceId: selectedAudioDevice?.deviceId,
       videoDeviceId: selectedVideoDevice?.deviceId,
     };
-    onClose(selectedDevices);
+    onClose(currentSelectedAudioFilter, selectedDevices);
   };
 
   return (
     <div>
       <Modal
         open={isOpen}
-        onClose={onClose}
+        onClose={() => onClose()}
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
@@ -130,13 +146,31 @@ export const DeviceSettingsModal: React.FC<Props> = ({ isOpen, onClose, selected
               <InputLabel id="video-select">{VIDEO_SELECT_LABEL}</InputLabel>
               <Select
                 id="video-select"
-                defaultValue={defaultVideoDeviceIndex}
+                defaultValue={defaultAudioFilerIndex}
                 label="Video Select"
                 onChange={onVideoSelect}
               >
                 {videoDevices.map((videoDevice, index) => (
                   <MenuItem key={videoDevice.deviceId} value={index}>
                     {videoDevice.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid container direction="row" justifyContent="space-between" alignItems="center" my={2}>
+            <Typography variant="h6">{VOICE_FILTER_HEADING}</Typography>
+            <FormControl sx={{ width: 200 }}>
+              <InputLabel id="video-select">{VOICE_FILTER_SELECT_LABEL}</InputLabel>
+              <Select
+                id="video-select"
+                defaultValue={defaultVideoDeviceIndex}
+                label="Video Select"
+                onChange={onAudioFilterSelect}
+              >
+                {AUDIO_FILTERS.map((audioFilter, index) => (
+                  <MenuItem key={audioFilter.id} value={index}>
+                    {audioFilter.label}
                   </MenuItem>
                 ))}
               </Select>

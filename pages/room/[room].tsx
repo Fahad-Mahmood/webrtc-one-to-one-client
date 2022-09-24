@@ -1,7 +1,7 @@
 import type { NextPage } from 'next';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { RoomSettings } from '../../src/components/RoomSettings';
 import { ChatRoom } from '../../src/components/ChatRoom';
 import { CallProvider } from '../../src/providers/CallProvider';
@@ -16,6 +16,8 @@ const ChatHome: NextPage = () => {
   const [mediaOptions, setMediaOptions] = useState<MediaOptions>({ audio: false, video: false });
   const [selectedDevices, setSelectedDevices] = useState<SelectedDevices | null>(null);
   const [localMediaStream, setLocalMediaStream] = useState<MediaStream | null>(null);
+  const [filteredMediaStream, setFilteredMediaStream] = useState<MediaStream | null>(null);
+  const [audioFilter, setAudioFilter] = useState<AudioFilter | null>(null);
 
   useEffect(() => {
     const getMediaDevices = async () => {
@@ -36,6 +38,8 @@ const ChatHome: NextPage = () => {
     getMediaDevices();
   }, [mediaOptions.audio, mediaOptions.video, selectedDevices?.audioDeviceId, selectedDevices?.videoDeviceId]);
 
+  const showFilteredStream = audioFilter && audioFilter?.label !== 'None';
+
   const onMediaOptionClick = (mediaOption: MediaOption) => {
     setMediaOptions({ ...mediaOptions, [mediaOption]: !mediaOptions[mediaOption] });
   };
@@ -46,6 +50,9 @@ const ChatHome: NextPage = () => {
 
   const onJoin = () => {
     if (userName.trim() !== '') {
+      if (localMediaStream && audioFilter?.transform) {
+        setFilteredMediaStream(audioFilter.transform(localMediaStream));
+      }
       setIsRoomJoined(true);
     }
   };
@@ -58,7 +65,7 @@ const ChatHome: NextPage = () => {
       </Head>
       <main>
         <CallProvider
-          localMediaStream={localMediaStream}
+          localMediaStream={showFilteredStream ? filteredMediaStream : localMediaStream}
           userName={userName}
           roomName={roomName}
           isReady={isRoomJoined}
@@ -69,11 +76,13 @@ const ChatHome: NextPage = () => {
               userName={userName}
               localMediaStream={localMediaStream}
               selectedDevices={selectedDevices}
+              selectedAudioFilter={audioFilter}
               mediaOptions={mediaOptions}
               onMediaOptionClick={onMediaOptionClick}
               setSelectedDevices={setSelectedDevices}
               onUserNameInput={onUserNameInput}
               onJoin={onJoin}
+              setSelectedAudioFilter={setAudioFilter}
             />
           ) : (
             <ChatRoom localMediaStream={localMediaStream} />

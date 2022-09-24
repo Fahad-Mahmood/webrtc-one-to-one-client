@@ -17,9 +17,11 @@ interface Props {
   userName: string;
   localMediaStream: MediaStream | null;
   selectedDevices: SelectedDevices | null;
+  selectedAudioFilter: AudioFilter | null;
   mediaOptions: MediaOptions;
   onMediaOptionClick: (mediaOption: MediaOption) => void;
   setSelectedDevices: React.Dispatch<SetStateAction<SelectedDevices | null>>;
+  setSelectedAudioFilter: React.Dispatch<SetStateAction<AudioFilter | null>>;
   onJoin: () => void;
   onUserNameInput: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
@@ -29,9 +31,11 @@ export const RoomSettings: React.FC<Props> = ({
   userName,
   localMediaStream,
   selectedDevices,
+  selectedAudioFilter,
   mediaOptions,
   onMediaOptionClick,
   setSelectedDevices,
+  setSelectedAudioFilter,
   onJoin,
   onUserNameInput,
 }) => {
@@ -43,9 +47,12 @@ export const RoomSettings: React.FC<Props> = ({
     setSettingsModalVisible(true);
   };
 
-  const onSettingsModalClose = (userSelectedDevices?: SelectedDevices) => {
+  const onSettingsModalClose = (selectedAudioFilter?: AudioFilter | null, userSelectedDevices?: SelectedDevices) => {
     if (userSelectedDevices) {
       setSelectedDevices(userSelectedDevices);
+    }
+    if (selectedAudioFilter) {
+      setSelectedAudioFilter(selectedAudioFilter);
     }
     setSettingsModalVisible(false);
   };
@@ -103,6 +110,7 @@ export const RoomSettings: React.FC<Props> = ({
       <DeviceSettingsModal
         isOpen={isSettingsModalVisible}
         onClose={onSettingsModalClose}
+        selectedAudioFilter={selectedAudioFilter}
         selectedDevices={selectedDevices}
       />
     </Grid>
