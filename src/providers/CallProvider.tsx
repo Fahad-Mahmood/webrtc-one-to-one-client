@@ -2,9 +2,11 @@ import React, { ReactNode, createContext, useState, useEffect, useRef } from 're
 import { io, Socket } from 'socket.io-client';
 import { SOCKET_URL } from '../config/constants';
 import { setPeerConnectionListeners } from './PeerConnection';
+import { anonymousTransformFilter, robotTransformFilter } from '../utils/audioFilters';
 
 export enum ROOM_STATUS {
   waiting,
+  canCall,
   calling,
   ringing,
   connecting,
@@ -46,11 +48,19 @@ interface Props {
 }
 
 interface ContextProps {
+  memberName: string | null;
   remoteMediaStream: MediaStream | null;
+  roomState: ROOM_STATUS;
+  onStartCall: () => void;
+  onAnswerCall: (isAnswered: boolean) => void;
 }
 
 const CallContext = createContext<ContextProps>({
+  memberName: '',
   remoteMediaStream: null,
+  roomState: ROOM_STATUS.waiting,
+  onStartCall: () => {},
+  onAnswerCall: () => {},
 });
 
 const socket = io(SOCKET_URL);
@@ -58,7 +68,6 @@ const socket = io(SOCKET_URL);
 export const CallProvider: React.FC<Props> = ({ children, roomName, isReady, userName, localMediaStream }) => {
   const [isInitiator, setIsInitiator] = useState<boolean>(false);
   const [memberName, setMemberName] = useState<string | null>(null);
-  const [memberSocketId, setMemberSocketId] = useState<string | null>(null);
   const [roomState, setRoomState] = useState<ROOM_STATUS>(ROOM_STATUS.waiting);
   const [remoteMediaStream, setRemoteMediaStream] = useState<MediaStream | null>(null);
   const [socketMessage, setSocketMessage] = useState<any>(null);
@@ -92,22 +101,29 @@ export const CallProvider: React.FC<Props> = ({ children, roomName, isReady, use
   const onRemoteStream = (remoteStream: MediaStream) => {
     console.log('received remote stream');
     setRemoteMediaStream(remoteStream);
+    setRoomState(ROOM_STATUS.connected);
   };
 
   const sendMessage = (message: any) => {
     console.log('Client sending message: ', message);
-    socket.emit('message', message);
+    socket.emit('message', message, roomName);
+  };
+
+  const addStreamToPeer = (peerConnection: ShimPeerConnection) => {
+    console.log('should add stream to peer', localMediaStream);
+    if (localMediaStream) {
+      console.log('adding stream to peer');
+      localMediaStream.getTracks().forEach((track: MediaStreamTrack) => {
+        peerConnection.addTrack(track, localMediaStream);
+      });
+    }
   };
 
   const createPeerConnection = () => {
     try {
       const pc = new RTCPeerConnection(PC_CONFIG) as ShimPeerConnection;
       setPeerConnectionListeners(pc, sendMessage, onRemoteStream);
-      if (localMediaStream) {
-        localMediaStream.getTracks().forEach((track: MediaStreamTrack) => {
-          pc.addTrack(track, localMediaStream);
-        });
-      }
+      addStreamToPeer(pc);
       peerConnectionRef.current = pc;
       setIsPeerCreated(true);
       console.log('Created RTCPeerConnnection');
@@ -141,6 +157,21 @@ export const CallProvider: React.FC<Props> = ({ children, roomName, isReady, use
     }
   };
 
+  const onStartCall = () => {
+    setRoomState(ROOM_STATUS.calling);
+    socket.emit(SOCKET_EVENTS.callInitiated, userName, roomName);
+  };
+
+  const onAnswerCall = (isAnswered: boolean) => {
+    if (isAnswered) {
+      socket.emit(SOCKET_EVENTS.callAccepted, userName, roomName);
+      setRoomState(ROOM_STATUS.connecting);
+    } else {
+      socket.emit(SOCKET_EVENTS.callRejected, roomName);
+      setRoomState(ROOM_STATUS.waiting);
+    }
+  };
+
   useEffect(() => {
     if (isReady && roomName) {
       socket.emit(SOCKET_EVENTS.createRoom, roomName);
@@ -148,7 +179,7 @@ export const CallProvider: React.FC<Props> = ({ children, roomName, isReady, use
   }, [isReady, roomName]);
 
   useEffect(() => {
-    console.log('here, shoudld create offer');
+    console.log('here, shoudld create offer', isPeerCreated, isInitiator);
     if (roomState === ROOM_STATUS.connecting && isInitiator && isPeerCreated) {
       console.log('starting call by creating offer');
       doCall();
@@ -185,59 +216,54 @@ export const CallProvider: React.FC<Props> = ({ children, roomName, isReady, use
   }, [socketMessage]);
 
   useEffect(() => {
-    socket.on(SOCKET_EVENTS.created, () => {
-      setIsInitiator(true);
-    });
+    if (userName) {
+      socket.on(SOCKET_EVENTS.created, () => {
+        console.log('first user');
+      });
 
-    socket.on(SOCKET_EVENTS.full, () => {
-      setRoomState(ROOM_STATUS.full);
-    });
+      socket.on(SOCKET_EVENTS.full, () => {
+        setRoomState(ROOM_STATUS.full);
+      });
 
-    socket.on(SOCKET_EVENTS.joined, (memberSocketId: string) => {
-      setMemberSocketId(memberSocketId);
-      const result = confirm('Do you want to start a call?');
-      if (result) {
-        setRoomState(ROOM_STATUS.calling);
-        socket.emit(SOCKET_EVENTS.callInitiated, memberSocketId, userName);
-      }
-    });
+      socket.on(SOCKET_EVENTS.joined, () => {
+        setRoomState(ROOM_STATUS.canCall);
+      });
 
-    socket.on('log', (array) => {
-      console.log(...array);
-    });
+      socket.on('log', (array) => {
+        console.log(...array);
+      });
 
-    socket.on(SOCKET_EVENTS.callInitiated, (memberSocketId, memberName) => {
-      setRoomState(ROOM_STATUS.ringing);
-      const result = confirm(`Someone is calling you. Do you want to accept the call?`);
-      if (result) {
-        setMemberSocketId(memberSocketId);
+      socket.on(SOCKET_EVENTS.callInitiated, (memberName) => {
+        console.log('call received, ', memberName);
+        setRoomState(ROOM_STATUS.ringing);
         setMemberName(memberName);
-        socket.emit(SOCKET_EVENTS.callAccepted, memberSocketId, userName);
+        setIsInitiator(true);
+      });
+      socket.on(SOCKET_EVENTS.callAccepted, (memberName) => {
+        setMemberName(memberName);
         setRoomState(ROOM_STATUS.connecting);
-      } else {
-        socket.emit(SOCKET_EVENTS.callRejected, memberSocketId);
-      }
-    });
-    socket.on(SOCKET_EVENTS.callAccepted, (memberName) => {
-      setMemberName(memberName);
-      setRoomState(ROOM_STATUS.connecting);
-    });
+      });
 
-    socket.on(SOCKET_EVENTS.callRejected, () => {
-      setRoomState(ROOM_STATUS.rejected);
-    });
+      socket.on(SOCKET_EVENTS.callRejected, () => {
+        setRoomState(ROOM_STATUS.rejected);
+      });
 
-    socket.on(SOCKET_EVENTS.message, (message) => {
-      setSocketMessage(message);
-    });
+      socket.on(SOCKET_EVENTS.message, (message) => {
+        setSocketMessage(message);
+      });
 
-    return () => socket.removeAllListeners();
-  }, []);
+      return () => socket.removeAllListeners();
+    }
+  }, [userName]);
 
   return (
     <CallContext.Provider
       value={{
+        memberName,
         remoteMediaStream,
+        roomState,
+        onStartCall,
+        onAnswerCall,
       }}
     >
       {children}
