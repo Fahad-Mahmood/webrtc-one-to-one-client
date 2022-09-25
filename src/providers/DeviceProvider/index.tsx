@@ -43,22 +43,30 @@ export const DeviceProvider: React.FC<Props> = ({ children }) => {
 
   useEffect(() => {
     const getMediaDevices = async () => {
-      if (mediaOptions.audio || mediaOptions.video) {
-        const audioConstraints = mediaOptions.audio
-          ? { audio: selectedDevices?.audioDeviceId ? { deviceId: selectedDevices.audioDeviceId } : true }
-          : { audio: false };
-        const videoConstraints = mediaOptions.video
-          ? { video: selectedDevices?.videoDeviceId ? { deviceId: selectedDevices.videoDeviceId } : true }
-          : { video: false };
-        const mediaConstraints = { ...audioConstraints, ...videoConstraints };
-        const mediaStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
-        setLocalMediaStream(mediaStream);
-      } else {
-        setLocalMediaStream(null);
-      }
+      const audioConstraints = {
+        audio: selectedDevices?.audioDeviceId ? { deviceId: selectedDevices.audioDeviceId } : true,
+      };
+      const videoConstraints = {
+        video: selectedDevices?.videoDeviceId ? { deviceId: selectedDevices.videoDeviceId } : true,
+      };
+      const mediaConstraints = { ...audioConstraints, ...videoConstraints };
+      const mediaStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+      setLocalMediaStream(mediaStream);
     };
     getMediaDevices();
-  }, [mediaOptions.audio, mediaOptions.video, selectedDevices?.audioDeviceId, selectedDevices?.videoDeviceId]);
+  }, [selectedDevices?.audioDeviceId, selectedDevices?.videoDeviceId]);
+
+  useEffect(() => {
+    if (localMediaStream) {
+      localMediaStream.getAudioTracks()[0].enabled = mediaOptions.audio;
+    }
+  }, [mediaOptions.audio, localMediaStream]);
+
+  useEffect(() => {
+    if (localMediaStream) {
+      localMediaStream.getVideoTracks()[0].enabled = mediaOptions.video;
+    }
+  }, [mediaOptions.video, localMediaStream]);
 
   const startMediaStream = () => {
     if (localMediaStream && selectedAudioFilter?.transform) {
