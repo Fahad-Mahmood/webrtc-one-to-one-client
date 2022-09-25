@@ -11,6 +11,7 @@ const START_CALL = 'Call Participant';
 const CALLING_TEXT = ' is calling you.';
 const CONNECTING_TEXT = 'Setting Up Call';
 const CALL_DECLINED_TEXT = 'Call Declined';
+const CALL_ENDED_TEXT = 'Call Ended';
 const HOVER_STYLES = { '&:hover': { opacity: 0.7 }, cursor: 'pointer' };
 
 const Pulse = keyframes`
@@ -104,11 +105,11 @@ export const RoomStateOverlay = () => {
         {CONNECTING_TEXT}
       </Typography>
     );
-  } else if (roomState === ROOM_STATUS.rejected) {
+  } else if (roomState === ROOM_STATUS.rejected || roomState === ROOM_STATUS.ended) {
     return (
       <>
         <Typography mb={4} variant="h6" color="white">
-          {CALL_DECLINED_TEXT}
+          {roomState === ROOM_STATUS.rejected ? CALL_DECLINED_TEXT : CALL_ENDED_TEXT}
         </Typography>
         <Button onClick={onBackClick} variant="contained">
           Join Another Room

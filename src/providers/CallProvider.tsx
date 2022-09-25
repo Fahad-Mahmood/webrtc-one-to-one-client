@@ -1,8 +1,7 @@
 import React, { ReactNode, createContext, useState, useEffect, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../config/constants';
 import { setPeerConnectionListeners } from './PeerConnection';
-import { anonymousTransformFilter, robotTransformFilter } from '../utils/audioFilters';
 
 export enum ROOM_STATUS {
   waiting,
@@ -13,7 +12,10 @@ export enum ROOM_STATUS {
   connected,
   rejected,
   full,
+  ended,
 }
+
+const HANGUP_SOCKET_MESSAGE = 'bye';
 
 const SOCKET_EVENTS = {
   createRoom: 'create or join',
@@ -23,6 +25,7 @@ const SOCKET_EVENTS = {
   callInitiated: 'call initiated',
   callAccepted: 'call accepted',
   callRejected: 'call rejected',
+  leaveRoom: 'leave room',
   message: 'message',
 };
 
@@ -53,6 +56,7 @@ interface ContextProps {
   roomState: ROOM_STATUS;
   onStartCall: () => void;
   onAnswerCall: (isAnswered: boolean) => void;
+  onEndCall: () => void;
 }
 
 const CallContext = createContext<ContextProps>({
@@ -61,6 +65,7 @@ const CallContext = createContext<ContextProps>({
   roomState: ROOM_STATUS.waiting,
   onStartCall: () => {},
   onAnswerCall: () => {},
+  onEndCall: () => {},
 });
 
 const socket = io(SOCKET_URL);
@@ -86,16 +91,6 @@ export const CallProvider: React.FC<Props> = ({ children, roomName, isReady, use
         .then((answer) => setLocalAndSendMessage(answer))
         .catch(onCreateSessionDescriptionError);
     }
-  };
-
-  const stop = () => {
-    console.log('caaling stop');
-    peerConnectionRef?.current?.close();
-  };
-
-  const handleRemoteHangup = () => {
-    console.log('Session terminated.');
-    stop();
   };
 
   const onRemoteStream = (remoteStream: MediaStream) => {
@@ -131,6 +126,11 @@ export const CallProvider: React.FC<Props> = ({ children, roomName, isReady, use
       console.log(`Failed to create PeerConnection, exception: ${e.message}`);
       alert('Cannot create RTCPeerConnection object.');
     }
+  };
+
+  const stopPeerConnection = () => {
+    peerConnectionRef?.current?.close();
+    peerConnectionRef.current = null;
   };
 
   function setLocalAndSendMessage(sessionDescription: RTCSessionDescriptionInit) {
@@ -172,6 +172,13 @@ export const CallProvider: React.FC<Props> = ({ children, roomName, isReady, use
     }
   };
 
+  const onEndCall = () => {
+    setRoomState(ROOM_STATUS.ended);
+    stopPeerConnection();
+    sendMessage(HANGUP_SOCKET_MESSAGE);
+    setIsInitiator(false);
+  };
+
   useEffect(() => {
     if (isReady && roomName) {
       socket.emit(SOCKET_EVENTS.createRoom, roomName);
@@ -209,8 +216,10 @@ export const CallProvider: React.FC<Props> = ({ children, roomName, isReady, use
           candidate: socketMessage.candidate,
         });
         peerConnectionRef?.current?.addIceCandidate(candidate);
-      } else if (socketMessage === 'bye') {
-        handleRemoteHangup();
+      } else if (socketMessage === HANGUP_SOCKET_MESSAGE) {
+        stopPeerConnection();
+        setRoomState(ROOM_STATUS.ended);
+        socket.emit(SOCKET_EVENTS.leaveRoom, roomName);
       }
     }
   }, [socketMessage]);
@@ -264,6 +273,7 @@ export const CallProvider: React.FC<Props> = ({ children, roomName, isReady, use
         roomState,
         onStartCall,
         onAnswerCall,
+        onEndCall,
       }}
     >
       {children}
