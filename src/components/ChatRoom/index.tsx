@@ -3,13 +3,12 @@ import { VideoPlayer } from '../VideoPlayer';
 import { ROOM_STATUS, useCallProviderContext } from '../../providers/CallProvider';
 import { RoomStateOverlay } from '../RoomStateOverlay';
 import { CallSettings } from '../CallSettings';
+import { useDeviceProviderContext } from '../../providers/DeviceProvider';
 
-interface Props {
-  localMediaStream: MediaStream | null;
-}
-
-export const ChatRoom: React.FC<Props> = ({ localMediaStream }) => {
+export const ChatRoom: React.FC = () => {
   const { remoteMediaStream, roomState } = useCallProviderContext();
+  const { localMediaStream } = useDeviceProviderContext();
+
   return (
     <Grid container sx={{ position: 'relative', width: '100%', height: '100vh' }}>
       <Grid

@@ -7,6 +7,7 @@ import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import { Theme, Select, MenuItem, InputLabel, FormControl, SelectChangeEvent } from '@mui/material';
 import { AUDIO_FILTERS } from '../../utils/audioFilters';
+import { useDeviceProviderContext } from '../../providers/DeviceProvider';
 
 const MODAL_TITLE = 'Device Settings';
 const AUDIO_DEVICE_KIND = 'audioinput';
@@ -37,17 +38,17 @@ const getModalStyles = (theme: Theme) => ({
 
 interface Props {
   isOpen: boolean;
-  onClose: (selectedAudioFilter?: AudioFilter | null, selectedDevices?: SelectedDevices) => void;
-  selectedDevices?: SelectedDevices | null;
-  selectedAudioFilter?: AudioFilter | null;
+  onClose: () => void;
 }
 
-export const DeviceSettingsModal: React.FC<Props> = ({ isOpen, onClose, selectedDevices, selectedAudioFilter }) => {
+export const DeviceSettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const theme = useTheme();
   const [availableDevices, setAvailableDevices] = useState<MediaDeviceInfo[] | null>(null);
   const [selectedAudioDevice, setSelectedAudioDevice] = useState<MediaDeviceInfo | null>(null);
   const [selectedVideoDevice, setSelectedVideoDevice] = useState<MediaDeviceInfo | null>(null);
   const [currentSelectedAudioFilter, setSelectedAudioFilter] = useState<AudioFilter | null>(null);
+
+  const { selectedDevices, selectedAudioFilter, setSelectedDevices, setAudioFilter } = useDeviceProviderContext();
 
   const audioDevices = useMemo(
     () => availableDevices?.filter((mediaDevice) => mediaDevice.kind === AUDIO_DEVICE_KIND) ?? [],
@@ -107,7 +108,15 @@ export const DeviceSettingsModal: React.FC<Props> = ({ isOpen, onClose, selected
       audioDeviceId: selectedAudioDevice?.deviceId,
       videoDeviceId: selectedVideoDevice?.deviceId,
     };
-    onClose(currentSelectedAudioFilter, selectedDevices);
+
+    if (selectedDevices) {
+      setSelectedDevices(selectedDevices);
+    }
+    if (currentSelectedAudioFilter) {
+      setSelectedAudioFilter(currentSelectedAudioFilter);
+    }
+
+    onClose();
   };
 
   return (

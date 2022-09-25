@@ -5,6 +5,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { RoomSettings } from '../../src/components/RoomSettings';
 import { ChatRoom } from '../../src/components/ChatRoom';
 import { CallProvider } from '../../src/providers/CallProvider';
+import { DeviceProvider, useDeviceProviderContext } from '../../src/providers/DeviceProvider';
 
 const PAGE_TITLE = 'WebRTC Ventures Join Room 1:1';
 
@@ -13,36 +14,8 @@ const ChatHome: NextPage = () => {
   const roomName = router.query.room as string;
   const [userName, setUserName] = useState<string>('');
   const [isRoomJoined, setIsRoomJoined] = useState<boolean>(false);
-  const [mediaOptions, setMediaOptions] = useState<MediaOptions>({ audio: false, video: false });
-  const [selectedDevices, setSelectedDevices] = useState<SelectedDevices | null>(null);
-  const [localMediaStream, setLocalMediaStream] = useState<MediaStream | null>(null);
-  const [filteredMediaStream, setFilteredMediaStream] = useState<MediaStream | null>(null);
-  const [audioFilter, setAudioFilter] = useState<AudioFilter | null>(null);
 
-  useEffect(() => {
-    const getMediaDevices = async () => {
-      if (mediaOptions.audio || mediaOptions.video) {
-        const audioConstraints = mediaOptions.audio
-          ? { audio: selectedDevices?.audioDeviceId ? { deviceId: selectedDevices.audioDeviceId } : true }
-          : { audio: false };
-        const videoConstraints = mediaOptions.video
-          ? { video: selectedDevices?.videoDeviceId ? { deviceId: selectedDevices.videoDeviceId } : true }
-          : { video: false };
-        const mediaConstraints = { ...audioConstraints, ...videoConstraints };
-        const mediaStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
-        setLocalMediaStream(mediaStream);
-      } else {
-        setLocalMediaStream(null);
-      }
-    };
-    getMediaDevices();
-  }, [mediaOptions.audio, mediaOptions.video, selectedDevices?.audioDeviceId, selectedDevices?.videoDeviceId]);
-
-  const showFilteredStream = audioFilter && audioFilter?.label !== 'None';
-
-  const onMediaOptionClick = (mediaOption: MediaOption) => {
-    setMediaOptions({ ...mediaOptions, [mediaOption]: !mediaOptions[mediaOption] });
-  };
+  const { startMediaStream } = useDeviceProviderContext();
 
   const onUserNameInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUserName(e.target.value);
@@ -50,9 +23,7 @@ const ChatHome: NextPage = () => {
 
   const onJoin = () => {
     if (userName.trim() !== '') {
-      if (localMediaStream && audioFilter?.transform) {
-        setFilteredMediaStream(audioFilter.transform(localMediaStream));
-      }
+      startMediaStream();
       setIsRoomJoined(true);
     }
   };
@@ -64,30 +35,15 @@ const ChatHome: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main>
-        <CallProvider
-          localMediaStream={showFilteredStream ? filteredMediaStream : localMediaStream}
-          userName={userName}
-          roomName={roomName}
-          isReady={isRoomJoined}
-        >
-          {!isRoomJoined ? (
-            <RoomSettings
-              roomName={roomName}
-              userName={userName}
-              localMediaStream={localMediaStream}
-              selectedDevices={selectedDevices}
-              selectedAudioFilter={audioFilter}
-              mediaOptions={mediaOptions}
-              onMediaOptionClick={onMediaOptionClick}
-              setSelectedDevices={setSelectedDevices}
-              onUserNameInput={onUserNameInput}
-              onJoin={onJoin}
-              setSelectedAudioFilter={setAudioFilter}
-            />
-          ) : (
-            <ChatRoom localMediaStream={localMediaStream} />
-          )}
-        </CallProvider>
+        <DeviceProvider>
+          <CallProvider userName={userName} roomName={roomName} isReady={isRoomJoined}>
+            {!isRoomJoined ? (
+              <RoomSettings roomName={roomName} userName={userName} onUserNameInput={onUserNameInput} onJoin={onJoin} />
+            ) : (
+              <ChatRoom />
+            )}
+          </CallProvider>
+        </DeviceProvider>
       </main>
     </div>
   );

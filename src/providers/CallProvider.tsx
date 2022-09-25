@@ -1,6 +1,7 @@
 import React, { ReactNode, createContext, useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../config/constants';
+import { useDeviceProviderContext } from './DeviceProvider';
 import { setPeerConnectionListeners } from './PeerConnection';
 
 export enum ROOM_STATUS {
@@ -46,7 +47,6 @@ interface Props {
   roomName: string;
   userName: string;
   isReady: boolean;
-  localMediaStream: MediaStream | null;
   children: ReactNode;
 }
 
@@ -70,7 +70,7 @@ const CallContext = createContext<ContextProps>({
 
 const socket = io(SOCKET_URL);
 
-export const CallProvider: React.FC<Props> = ({ children, roomName, isReady, userName, localMediaStream }) => {
+export const CallProvider: React.FC<Props> = ({ children, roomName, isReady, userName }) => {
   const [isInitiator, setIsInitiator] = useState<boolean>(false);
   const [memberName, setMemberName] = useState<string | null>(null);
   const [roomState, setRoomState] = useState<ROOM_STATUS>(ROOM_STATUS.waiting);
@@ -78,6 +78,8 @@ export const CallProvider: React.FC<Props> = ({ children, roomName, isReady, use
   const [socketMessage, setSocketMessage] = useState<any>(null);
   const [isPeerCreated, setIsPeerCreated] = useState<boolean>(false);
   const peerConnectionRef = useRef<ShimPeerConnection | null>(null);
+
+  const { localMediaStream } = useDeviceProviderContext();
 
   const onCreateSessionDescriptionError = (error: any) => {
     console.log(`Failed to create session description: ${error.toString()}`);
@@ -122,8 +124,8 @@ export const CallProvider: React.FC<Props> = ({ children, roomName, isReady, use
       peerConnectionRef.current = pc;
       setIsPeerCreated(true);
       console.log('Created RTCPeerConnnection');
-    } catch (e) {
-      console.log(`Failed to create PeerConnection, exception: ${e.message}`);
+    } catch (e: any) {
+      console.log(`Failed to create PeerConnection, exception: ${e?.message}`);
       alert('Cannot create RTCPeerConnection object.');
     }
   };

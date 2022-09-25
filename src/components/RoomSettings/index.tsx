@@ -3,6 +3,7 @@ import { Button, Grid, Box, TextField, Typography } from '@mui/material';
 import { Mic, MicOff, Videocam, VideocamOff, Settings } from '@mui/icons-material';
 import { DeviceSettingsModal } from '../modals/DeviceSettings';
 import { VideoPlayer } from '../VideoPlayer';
+import { useDeviceProviderContext } from '../../providers/DeviceProvider';
 
 const JOIN_ROOM_HEADING = 'Join Room';
 const AUDIO_OPTION = 'audio';
@@ -15,31 +16,13 @@ const ICON_STYLES = { cursor: 'pointer', '&:hover': { opacity: 0.7 }, color: 'gr
 interface Props {
   roomName: string;
   userName: string;
-  localMediaStream: MediaStream | null;
-  selectedDevices: SelectedDevices | null;
-  selectedAudioFilter: AudioFilter | null;
-  mediaOptions: MediaOptions;
-  onMediaOptionClick: (mediaOption: MediaOption) => void;
-  setSelectedDevices: React.Dispatch<SetStateAction<SelectedDevices | null>>;
-  setSelectedAudioFilter: React.Dispatch<SetStateAction<AudioFilter | null>>;
   onJoin: () => void;
   onUserNameInput: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export const RoomSettings: React.FC<Props> = ({
-  roomName,
-  userName,
-  localMediaStream,
-  selectedDevices,
-  selectedAudioFilter,
-  mediaOptions,
-  onMediaOptionClick,
-  setSelectedDevices,
-  setSelectedAudioFilter,
-  onJoin,
-  onUserNameInput,
-}) => {
+export const RoomSettings: React.FC<Props> = ({ roomName, userName, onJoin, onUserNameInput }) => {
   const [isSettingsModalVisible, setSettingsModalVisible] = useState(false);
+  const { mediaOptions, localMediaStream, onMediaOptionClick } = useDeviceProviderContext();
 
   const isJoinBtnDisabled = userName.trim() === '';
 
@@ -47,13 +30,7 @@ export const RoomSettings: React.FC<Props> = ({
     setSettingsModalVisible(true);
   };
 
-  const onSettingsModalClose = (selectedAudioFilter?: AudioFilter | null, userSelectedDevices?: SelectedDevices) => {
-    if (userSelectedDevices) {
-      setSelectedDevices(userSelectedDevices);
-    }
-    if (selectedAudioFilter) {
-      setSelectedAudioFilter(selectedAudioFilter);
-    }
+  const onSettingsModalClose = () => {
     setSettingsModalVisible(false);
   };
 
@@ -107,12 +84,7 @@ export const RoomSettings: React.FC<Props> = ({
       <Box sx={{ width: ['100vw', '70vw'], height: ['50%', '100%'], bgcolor: 'grey.900' }}>
         {mediaOptions.video && localMediaStream ? <VideoPlayer isMuted isMirrored stream={localMediaStream} /> : null}
       </Box>
-      <DeviceSettingsModal
-        isOpen={isSettingsModalVisible}
-        onClose={onSettingsModalClose}
-        selectedAudioFilter={selectedAudioFilter}
-        selectedDevices={selectedDevices}
-      />
+      <DeviceSettingsModal isOpen={isSettingsModalVisible} onClose={onSettingsModalClose} />
     </Grid>
   );
 };
