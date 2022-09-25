@@ -11,6 +11,7 @@ interface ContextProps {
   setSelectedDevices: (selectedDevices: SelectedDevices) => void;
   setAudioFilter: (audioFilter: AudioFilter) => void;
   startMediaStream: () => void;
+  stopMediaStream: () => void;
 }
 
 const DeviceContext = createContext<ContextProps>({
@@ -22,6 +23,7 @@ const DeviceContext = createContext<ContextProps>({
   setSelectedDevices: () => {},
   setAudioFilter: () => {},
   startMediaStream: () => {},
+  stopMediaStream: () => {},
 });
 
 interface Props {
@@ -74,6 +76,15 @@ export const DeviceProvider: React.FC<Props> = ({ children }) => {
     }
   };
 
+  const stopMediaStream = () => {
+    if (localMediaStream) {
+      localMediaStream.getTracks().forEach((track) => track.stop());
+    }
+    if (filteredMediaStream) {
+      filteredMediaStream.getTracks().forEach((track) => track.stop());
+    }
+  };
+
   return (
     <DeviceContext.Provider
       value={{
@@ -85,6 +96,7 @@ export const DeviceProvider: React.FC<Props> = ({ children }) => {
         setSelectedDevices,
         setAudioFilter,
         startMediaStream,
+        stopMediaStream,
       }}
     >
       {children}

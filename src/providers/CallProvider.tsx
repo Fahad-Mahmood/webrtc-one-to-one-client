@@ -79,7 +79,7 @@ export const CallProvider: React.FC<Props> = ({ children, roomName, isReady, use
   const [isPeerCreated, setIsPeerCreated] = useState<boolean>(false);
   const peerConnectionRef = useRef<ShimPeerConnection | null>(null);
 
-  const { localMediaStream } = useDeviceProviderContext();
+  const { localMediaStream, stopMediaStream } = useDeviceProviderContext();
 
   const onCreateSessionDescriptionError = (error: any) => {
     console.log(`Failed to create session description: ${error.toString()}`);
@@ -174,11 +174,16 @@ export const CallProvider: React.FC<Props> = ({ children, roomName, isReady, use
     }
   };
 
-  const onEndCall = () => {
+  const hangupCall = () => {
     setRoomState(ROOM_STATUS.ended);
     stopPeerConnection();
-    sendMessage(HANGUP_SOCKET_MESSAGE);
+    stopMediaStream();
     setIsInitiator(false);
+  };
+
+  const onEndCall = () => {
+    hangupCall();
+    sendMessage(HANGUP_SOCKET_MESSAGE);
   };
 
   useEffect(() => {
@@ -219,8 +224,7 @@ export const CallProvider: React.FC<Props> = ({ children, roomName, isReady, use
         });
         peerConnectionRef?.current?.addIceCandidate(candidate);
       } else if (socketMessage === HANGUP_SOCKET_MESSAGE) {
-        stopPeerConnection();
-        setRoomState(ROOM_STATUS.ended);
+        hangupCall();
         socket.emit(SOCKET_EVENTS.leaveRoom, roomName);
       }
     }
