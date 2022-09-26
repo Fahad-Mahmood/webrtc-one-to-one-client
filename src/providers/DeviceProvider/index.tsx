@@ -1,6 +1,9 @@
-import React, { ReactNode, createContext, useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/router';
+import React, { ReactNode, createContext, useState, useEffect } from 'react';
 
 const DEFAULT_MEDIA_OPTIONS = { audio: false, video: false };
+
+const CHAT_ROOM_PATH = '/room/[room]';
 
 interface ContextProps {
   isReady: boolean;
@@ -40,6 +43,9 @@ export const DeviceProvider: React.FC<Props> = ({ children }) => {
   const [selectedAudioFilter, setAudioFilter] = useState<AudioFilter | null>(null);
   const [isReady, setIsReady] = useState(false);
 
+  const router = useRouter();
+  console.log(router.pathname);
+
   const showFilteredStream = selectedAudioFilter && selectedAudioFilter?.label !== 'None';
 
   const onMediaOptionClick = (mediaOption: MediaOption) => {
@@ -58,8 +64,16 @@ export const DeviceProvider: React.FC<Props> = ({ children }) => {
       const mediaStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
       setLocalMediaStream(mediaStream);
     };
-    getMediaDevices();
-  }, [selectedDevices?.audioDeviceId, selectedDevices?.videoDeviceId]);
+    if (router.pathname === CHAT_ROOM_PATH) {
+      getMediaDevices();
+    }
+  }, [selectedDevices?.audioDeviceId, selectedDevices?.videoDeviceId, router.pathname]);
+
+  useEffect(() => {
+    if (router.pathname !== CHAT_ROOM_PATH) {
+      stopMediaStream();
+    }
+  }, [router.pathname]);
 
   useEffect(() => {
     if (localMediaStream) {
