@@ -48,7 +48,7 @@ export const DeviceSettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [selectedVideoDevice, setSelectedVideoDevice] = useState<MediaDeviceInfo | null>(null);
   const [currentSelectedAudioFilter, setSelectedAudioFilter] = useState<AudioFilter | null>(null);
 
-  const { selectedDevices, selectedAudioFilter, setSelectedDevices, setAudioFilter } = useDeviceProviderContext();
+  const { selectedDevices, selectedAudioFilter, setSelectedDevices, saveAudioFilter } = useDeviceProviderContext();
 
   const audioDevices = useMemo(
     () => availableDevices?.filter((mediaDevice) => mediaDevice.kind === AUDIO_DEVICE_KIND) ?? [],
@@ -74,7 +74,7 @@ export const DeviceSettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
     [selectedDevices, videoDevices],
   );
 
-  const defaultAudioFilerIndex = useMemo(
+  const defaultAudioFilterIndex = useMemo(
     () =>
       selectedAudioFilter ? AUDIO_FILTERS.findIndex((audioFilter) => audioFilter.id === selectedAudioFilter.id) : 0,
     [selectedAudioFilter],
@@ -113,7 +113,7 @@ export const DeviceSettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
       setSelectedDevices(selectedDevices);
     }
     if (currentSelectedAudioFilter) {
-      setSelectedAudioFilter(currentSelectedAudioFilter);
+      saveAudioFilter(currentSelectedAudioFilter);
     }
 
     onClose();
@@ -155,7 +155,7 @@ export const DeviceSettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
               <InputLabel id="video-select">{VIDEO_SELECT_LABEL}</InputLabel>
               <Select
                 id="video-select"
-                defaultValue={defaultAudioFilerIndex}
+                defaultValue={defaultVideoDeviceIndex}
                 label="Video Select"
                 onChange={onVideoSelect}
               >
@@ -170,11 +170,11 @@ export const DeviceSettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
           <Grid container direction="row" justifyContent="space-between" alignItems="center" my={2}>
             <Typography variant="h6">{VOICE_FILTER_HEADING}</Typography>
             <FormControl sx={{ width: 200 }}>
-              <InputLabel id="video-select">{VOICE_FILTER_SELECT_LABEL}</InputLabel>
+              <InputLabel id="audio-filter-select">{VOICE_FILTER_SELECT_LABEL}</InputLabel>
               <Select
-                id="video-select"
-                defaultValue={defaultVideoDeviceIndex}
-                label="Video Select"
+                id="audio-filter-select"
+                defaultValue={defaultAudioFilterIndex}
+                label="Audio Filter Select"
                 onChange={onAudioFilterSelect}
               >
                 {AUDIO_FILTERS.map((audioFilter, index) => (

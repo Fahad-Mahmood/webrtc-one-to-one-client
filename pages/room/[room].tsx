@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { RoomSettings } from '../../src/components/RoomSettings';
 import { ChatRoom } from '../../src/components/ChatRoom';
 import { CallProvider } from '../../src/providers/CallProvider';
-import { DeviceProvider, useDeviceProviderContext } from '../../src/providers/DeviceProvider';
+import { useDeviceProviderContext } from '../../src/providers/DeviceProvider';
 
 const PAGE_TITLE = 'WebRTC Ventures Join Room 1:1';
 
@@ -35,15 +35,13 @@ const ChatHome: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main>
-        <DeviceProvider>
-          <CallProvider userName={userName} roomName={roomName} isReady={isRoomJoined}>
-            {!isRoomJoined ? (
-              <RoomSettings roomName={roomName} userName={userName} onUserNameInput={onUserNameInput} onJoin={onJoin} />
-            ) : (
-              <ChatRoom />
-            )}
-          </CallProvider>
-        </DeviceProvider>
+        <CallProvider userName={userName} roomName={roomName} isReady={isRoomJoined}>
+          {!isRoomJoined ? (
+            <RoomSettings roomName={roomName} userName={userName} onUserNameInput={onUserNameInput} onJoin={onJoin} />
+          ) : (
+            <ChatRoom />
+          )}
+        </CallProvider>
       </main>
     </div>
   );

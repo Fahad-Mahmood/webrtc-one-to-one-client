@@ -8,6 +8,7 @@ import { CacheProvider, EmotionCache } from '@emotion/react';
 import createEmotionCache from '../src/config/createEmotionCache';
 import theme from '../src/config/theme';
 import { GLOBAL_STYLES } from '../styles/global';
+import { DeviceProvider } from '../src/providers/DeviceProvider';
 import 'webrtc-adapter';
 
 const clientSideEmotionCache = createEmotionCache();
@@ -26,7 +27,9 @@ export default function MyApp(props: MyAppProps) {
       <ThemeProvider theme={theme}>
         <GlobalStyles styles={GLOBAL_STYLES} />
         <CssBaseline />
-        <Component {...pageProps} />
+        <DeviceProvider>
+          <Component {...pageProps} />
+        </DeviceProvider>
       </ThemeProvider>
     </CacheProvider>
   );

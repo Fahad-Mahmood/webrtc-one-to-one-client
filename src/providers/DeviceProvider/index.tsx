@@ -3,25 +3,27 @@ import React, { ReactNode, createContext, useState, useEffect, useRef } from 're
 const DEFAULT_MEDIA_OPTIONS = { audio: false, video: false };
 
 interface ContextProps {
+  isReady: boolean;
   selectedDevices: SelectedDevices | null;
   selectedAudioFilter: AudioFilter | null;
   mediaOptions: MediaOptions;
   localMediaStream: MediaStream | null;
   onMediaOptionClick: (mediaOption: MediaOption) => void;
   setSelectedDevices: (selectedDevices: SelectedDevices) => void;
-  setAudioFilter: (audioFilter: AudioFilter) => void;
+  saveAudioFilter: (audioFilter: AudioFilter) => void;
   startMediaStream: () => void;
   stopMediaStream: () => void;
 }
 
 const DeviceContext = createContext<ContextProps>({
+  isReady: false,
   selectedDevices: null,
   selectedAudioFilter: null,
   mediaOptions: DEFAULT_MEDIA_OPTIONS,
   localMediaStream: null,
   onMediaOptionClick: () => {},
   setSelectedDevices: () => {},
-  setAudioFilter: () => {},
+  saveAudioFilter: () => {},
   startMediaStream: () => {},
   stopMediaStream: () => {},
 });
@@ -36,6 +38,7 @@ export const DeviceProvider: React.FC<Props> = ({ children }) => {
   const [localMediaStream, setLocalMediaStream] = useState<MediaStream | null>(null);
   const [filteredMediaStream, setFilteredMediaStream] = useState<MediaStream | null>(null);
   const [selectedAudioFilter, setAudioFilter] = useState<AudioFilter | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
   const showFilteredStream = selectedAudioFilter && selectedAudioFilter?.label !== 'None';
 
@@ -71,9 +74,7 @@ export const DeviceProvider: React.FC<Props> = ({ children }) => {
   }, [mediaOptions.video, localMediaStream]);
 
   const startMediaStream = () => {
-    if (localMediaStream && selectedAudioFilter?.transform) {
-      setFilteredMediaStream(selectedAudioFilter.transform(localMediaStream));
-    }
+    setIsReady(true);
   };
 
   const stopMediaStream = () => {
@@ -85,16 +86,29 @@ export const DeviceProvider: React.FC<Props> = ({ children }) => {
     }
   };
 
+  const saveAudioFilter = (audioFilter: AudioFilter) => {
+    if (localMediaStream && audioFilter?.transform) {
+      const filteredMediaStream = audioFilter.transform(localMediaStream);
+      const videoTracks = localMediaStream.getVideoTracks();
+      videoTracks.forEach((track) => {
+        filteredMediaStream.addTrack(track);
+      });
+      setFilteredMediaStream(filteredMediaStream);
+    }
+    setAudioFilter(audioFilter);
+  };
+
   return (
     <DeviceContext.Provider
       value={{
+        isReady,
         selectedDevices,
         selectedAudioFilter,
         mediaOptions,
-        localMediaStream: showFilteredStream ? filteredMediaStream : localMediaStream,
+        localMediaStream: filteredMediaStream ?? localMediaStream,
         onMediaOptionClick,
         setSelectedDevices,
-        setAudioFilter,
+        saveAudioFilter,
         startMediaStream,
         stopMediaStream,
       }}
