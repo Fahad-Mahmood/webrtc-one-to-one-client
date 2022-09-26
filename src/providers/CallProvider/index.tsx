@@ -1,7 +1,7 @@
 import React, { ReactNode, createContext, useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
-import { SOCKET_URL } from '../config/constants';
-import { useDeviceProviderContext } from './DeviceProvider';
+import { SOCKET_URL } from '../../config/constants';
+import { useDeviceProviderContext } from '../DeviceProvider';
 import { setPeerConnectionListeners } from './PeerConnection';
 
 export enum ROOM_STATUS {

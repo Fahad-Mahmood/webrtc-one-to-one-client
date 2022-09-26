@@ -1,7 +1,7 @@
 import type { NextPage } from 'next';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState } from 'react';
 import { RoomSettings } from '../../src/components/RoomSettings';
 import { ChatRoom } from '../../src/components/ChatRoom';
 import { CallProvider } from '../../src/providers/CallProvider';
