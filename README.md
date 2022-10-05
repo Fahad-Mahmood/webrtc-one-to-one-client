@@ -1,3 +1,4 @@
+<a name="readme-top"></a>
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
@@ -101,7 +102,7 @@ Make sure the signaling server is installed and running. To find more details, c
 
 - [ ] Voice or Video mute and unmute during the call
 - [ ] Setup screen sharing feature on call
-- [ ] Use of twilio turn server for instead of google stun
+- [ ] Use of twilio turn server instead of google stun
 - [ ] Show statistics durnig call for example bitrate.
 
 See the [open issues](https://github.com/othneildrew/Best-README-Template/issues) for a full list of proposed features (and known issues).
