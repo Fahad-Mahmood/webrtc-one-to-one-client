@@ -28,6 +28,7 @@ const SOCKET_EVENTS = {
   callRejected: 'call rejected',
   leaveRoom: 'leave room',
   message: 'message',
+  iceServers: 'iceServers',
 };
 
 const PC_CONFIG = {
@@ -78,6 +79,7 @@ export const CallProvider: React.FC<Props> = ({ children, roomName, isReady, use
   const [socketMessage, setSocketMessage] = useState<any>(null);
   const [isPeerCreated, setIsPeerCreated] = useState<boolean>(false);
   const peerConnectionRef = useRef<ShimPeerConnection | null>(null);
+  const [iceServers, setIceServers] = useState<RTCIceServer[] | null>(null);
 
   const { localMediaStream, stopMediaStream } = useDeviceProviderContext();
 
@@ -117,16 +119,20 @@ export const CallProvider: React.FC<Props> = ({ children, roomName, isReady, use
   };
 
   const createPeerConnection = () => {
-    try {
-      const pc = new RTCPeerConnection(PC_CONFIG) as ShimPeerConnection;
-      setPeerConnectionListeners(pc, sendMessage, onRemoteStream);
-      addStreamToPeer(pc);
-      peerConnectionRef.current = pc;
-      setIsPeerCreated(true);
-      console.log('Created RTCPeerConnnection');
-    } catch (e: any) {
-      console.log(`Failed to create PeerConnection, exception: ${e?.message}`);
-      alert('Cannot create RTCPeerConnection object.');
+    if (iceServers) {
+      try {
+        const pc = new RTCPeerConnection({ iceServers }) as ShimPeerConnection;
+        setPeerConnectionListeners(pc, sendMessage, onRemoteStream);
+        addStreamToPeer(pc);
+        peerConnectionRef.current = pc;
+        setIsPeerCreated(true);
+        console.log('Created RTCPeerConnnection');
+      } catch (e: any) {
+        console.log(`Failed to create PeerConnection, exception: ${e?.message}`);
+        alert('Cannot create RTCPeerConnection object.');
+      }
+    } else {
+      alert('Error fetching ice credentials');
     }
   };
 
@@ -236,6 +242,10 @@ export const CallProvider: React.FC<Props> = ({ children, roomName, isReady, use
         console.log('first user');
       });
 
+      socket.on(SOCKET_EVENTS.iceServers, (iceServers: RTCIceServer[]) => {
+        setIceServers(iceServers);
+      });
+
       socket.on(SOCKET_EVENTS.full, () => {
         setRoomState(ROOM_STATUS.full);
       });
@@ -249,11 +259,11 @@ export const CallProvider: React.FC<Props> = ({ children, roomName, isReady, use
       });
 
       socket.on(SOCKET_EVENTS.callInitiated, (memberName) => {
-        console.log('call received, ', memberName);
-        setRoomState(ROOM_STATUS.ringing);
         setMemberName(memberName);
+        setRoomState(ROOM_STATUS.ringing);
         setIsInitiator(true);
       });
+
       socket.on(SOCKET_EVENTS.callAccepted, (memberName) => {
         setMemberName(memberName);
         setRoomState(ROOM_STATUS.connecting);
